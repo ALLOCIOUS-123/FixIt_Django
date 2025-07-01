@@ -1,0 +1,13 @@
+@echo off
+
+echo Running migrations...
+python manage.py migrate
+
+echo Creating superuser...
+python manage.py createsuperuser --email admin@example.com --password admin123 --full-name "Admin User"
+
+echo Collecting static files...
+python manage.py collectstatic --noinput
+
+echo Starting application...
+gunicorn fixithub_django.wsgi:application
