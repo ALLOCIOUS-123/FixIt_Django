@@ -1,0 +1,58 @@
+{% for problem in problems %}
+<div class="card mb-3">
+    <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <div>
+                <h5 class="card-title">{{ problem.title }}</h5>
+                <small class="text-muted">Posted by {{ problem.submitted_by.username }} on {{ problem.created_at|date:"M d, Y" }}</small>
+            </div>
+            {% if user.is_authenticated and problem.submitted_by == user %}
+            <div>
+                <a href="{% url 'edit_problem' problem.id %}" class="btn btn-sm btn-outline-primary">Edit</a>
+                <a href="{% url 'delete_problem' problem.id %}" class="btn btn-sm btn-outline-danger">Delete</a>
+            </div>
+            {% endif %}
+        </div>
+
+        <p class="card-text">{{ problem.description }}</p>
+
+        <div class="mt-3">
+            <h6>Solutions ({{ problem.solutions.count }})</h6>
+            <div class="list-group">
+                {% for solution in problem.solutions.all %}
+                <div class="list-group-item">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="mb-1">{{ solution.text }}</p>
+                            <small class="text-muted">By {{ solution.user.username }} on {{ solution.created_at|date:"M d, Y" }}</small>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-sm btn-outline-primary" onclick="voteSolution({{ solution.id }})">
+                                <i class="bi bi-hand-thumbs-up"></i> {{ solution.votes.count }}
+                            </button>
+                            {% if solution.user == user %}
+                            <a href="{% url 'edit_solution' solution.id %}" class="btn btn-sm btn-outline-secondary">Edit</a>
+                            <a href="{% url 'delete_solution' solution.id %}" class="btn btn-sm btn-outline-danger">Delete</a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            {% if user.is_authenticated %}
+            <div class="mt-3">
+                <h6>Add Your Solution</h6>
+                <form method="post" action="{% url 'add_solution' problem.id %}">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <textarea class="form-control" name="text" rows="3" placeholder="Enter your solution..." required></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Submit Solution</button>
+                </form>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endfor %}

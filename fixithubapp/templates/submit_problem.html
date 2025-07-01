@@ -1,0 +1,218 @@
+{% extends 'base.html' %}
+
+{% block title %}Submit Problem - FixItHub{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">Submit a New Problem</h4>
+                    <p class="mb-0">Help us help others by sharing your problem. The more details you provide, the better!</p>
+                </div>
+                <div class="card-body">
+                    <form method="POST" enctype="multipart/form-data" id="problemForm">
+                        {% csrf_token %}
+                        
+                        <!-- Title -->
+                        <div class="mb-4">
+                            <label for="title" class="form-label fw-bold">Problem Title</label>
+                            <input type="text" 
+                                   class="form-control form-control-lg" 
+                                   id="title" 
+                                   name="title" 
+                                   placeholder="Enter a clear and descriptive title" 
+                                   required>
+                            <div class="form-text">Example: 'Leaking faucet in kitchen sink'</div>
+                        </div>
+
+                        <!-- Description -->
+                        <div class="mb-4">
+                            <label for="description" class="form-label fw-bold">Problem Description</label>
+                            <textarea class="form-control form-control-lg" 
+                                      id="description" 
+                                      name="description" 
+                                      rows="6" 
+                                      placeholder="Please describe your problem in detail..." 
+                                      required></textarea>
+                            <div class="form-text">Include when the problem started, what you've tried, and any error messages</div>
+                        </div>
+
+                        <!-- Photo -->
+                        <div class="mb-4">
+                            <label for="photo" class="form-label fw-bold">Problem Photo</label>
+                            <div class="input-group">
+                                <input type="file" 
+                                       class="form-control" 
+                                       id="photo" 
+                                       name="photo" 
+                                       accept="image/*">
+                                <label class="input-group-text" for="photo">
+                                    <i class="bi bi-camera"></i> Choose Photo
+                                </label>
+                            </div>
+                            <div class="mt-2">
+                                <button type="button" class="btn btn-outline-primary btn-sm" id="takePhotoBtn">
+                                    <i class="bi bi-camera-video"></i> Take Photo
+                                </button>
+                                <div class="form-text">
+                                    Upload a photo or take one with your camera to better illustrate the problem
+                                </div>
+                            </div>
+                            <div id="photoPreview" class="mt-3"></div>
+                        </div>
+
+                        <!-- Location -->
+                        <div class="row">
+                            <div class="col-md-6 mb-4">
+                                <label for="latitude" class="form-label fw-bold">Location (Optional)</label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="bi bi-geo-alt"></i></span>
+                                    <input type="text" 
+                                           class="form-control" 
+                                           id="latitude" 
+                                           name="latitude" 
+                                           placeholder="Latitude">
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-4">
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="bi bi-geo-alt"></i></span>
+                                    <input type="text" 
+                                           class="form-control" 
+                                           id="longitude" 
+                                           name="longitude" 
+                                           placeholder="Longitude">
+                                    <button class="btn btn-outline-primary" type="button" id="getLocationBtn">
+                                        <i class="bi bi-geo"></i> Get Location
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Actions -->
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="bi bi-plus-circle"></i> Submit Problem
+                            </button>
+                            <a href="{% url 'login' %}" class="btn btn-outline-primary btn-lg">
+                                <i class="bi bi-arrow-left"></i> Back to Login
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Photo handling
+let photoPreview = document.getElementById('photoPreview');
+let photoInput = document.getElementById('photo');
+
+photoInput.addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            photoPreview.innerHTML = `
+                <div class="d-flex align-items-center">
+                    <img src="${e.target.result}" class="photo-preview me-3">
+                    <div>
+                        <p class="mb-1">${file.name}</p>
+                        <small>${Math.round(file.size / 1024)} KB</small>
+                    </div>
+                </div>
+            `;
+        };
+        reader.readAsDataURL(file);
+    }
+});
+
+// Take photo functionality
+if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+    document.getElementById('takePhotoBtn').addEventListener('click', async function() {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+            const video = document.createElement('video');
+            video.srcObject = stream;
+            video.play();
+            
+            // Wait for video to load
+            await new Promise(resolve => {
+                video.onloadedmetadata = resolve;
+            });
+            
+            // Take photo
+            const canvas = document.createElement('canvas');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            canvas.getContext('2d').drawImage(video, 0, 0);
+            
+            // Convert to blob and set as file input value
+            canvas.toBlob(blob => {
+                const file = new File([blob], 'problem-photo.jpg', { type: 'image/jpeg' });
+                const dataTransfer = new DataTransfer();
+                dataTransfer.items.add(file);
+                photoInput.files = dataTransfer.files;
+                
+                // Update preview
+                photoPreview.innerHTML = `
+                    <div class="d-flex align-items-center">
+                        <img src="${URL.createObjectURL(blob)}" class="photo-preview me-3">
+                        <div>
+                            <p class="mb-1">problem-photo.jpg</p>
+                            <small>${Math.round(blob.size / 1024)} KB</small>
+                        </div>
+                    </div>
+                `;
+                
+                // Clean up
+                stream.getTracks().forEach(track => track.stop());
+            }, 'image/jpeg');
+            
+        } catch (err) {
+            toastr.error('Could not access camera. Please allow camera access.');
+        }
+    });
+}
+
+// Location handling
+document.getElementById('getLocationBtn').addEventListener('click', function() {
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+            function(position) {
+                document.getElementById('latitude').value = position.coords.latitude.toFixed(6);
+                document.getElementById('longitude').value = position.coords.longitude.toFixed(6);
+                toastr.success('Location successfully retrieved!');
+            },
+            function(error) {
+                toastr.error('Could not retrieve location. Please try again.');
+            }
+        );
+    } else {
+        toastr.error('Geolocation is not supported by this browser.');
+    }
+});
+
+// Form submission
+$('#problemForm').on('submit', function(e) {
+    const title = $('#title').val();
+    const description = $('#description').val();
+    
+    if (title.length < 10) {
+        toastr.error('Please provide a more descriptive title (minimum 10 characters)');
+        e.preventDefault();
+        return;
+    }
+    
+    if (description.length < 20) {
+        toastr.error('Please provide more details about your problem (minimum 20 characters)');
+        e.preventDefault();
+        return;
+    }
+});
+</script>
+{% endblock %}

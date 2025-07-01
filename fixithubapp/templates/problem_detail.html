@@ -1,0 +1,127 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ problem.title }} - FixItHub{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h2 class="mb-0">{{ problem.title }}</h2>
+                </div>
+                <div class="card-body">
+                    <div class="problem-details">
+                        <p class="mb-2"><strong>Reported by:</strong> {{ problem.user.email }}</p>
+                        <p class="mb-2"><strong>Date:</strong> {{ problem.date_reported|date:"F j, Y" }}</p>
+                        {% if problem.latitude and problem.longitude %}
+                        <p class="mb-2"><strong>Location:</strong> {{ problem.latitude }}, {{ problem.longitude }}</p>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="problem-description mt-4">
+                        <h4>Description</h4>
+                        <p>{{ problem.description }}</p>
+                    </div>
+                    
+                    {% if problem.photo %}
+                    <div class="problem-image mt-4">
+                        <img src="{{ problem.photo.url }}" class="img-fluid rounded" alt="Problem photo">
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="mb-0">Solutions ({{ solutions.count }})</h3>
+                    {% if can_add_solution %}
+                    <button type="button" class="btn btn-primary btn-sm float-end" data-bs-toggle="modal" data-bs-target="#addSolutionModal">
+                        Add Solution
+                    </button>
+                    {% endif %}
+                </div>
+                <div class="card-body">
+                    {% if solutions.exists %}
+                    <div class="solutions-list">
+                        {% for solution in solutions %}
+                        <div class="solution-item mb-4">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <h5 class="mb-1">{{ solution.user.email }}</h5>
+                                    <p class="mb-1">{{ solution.created_at|date:"F j, Y H:i" }}</p>
+                                    <div class="solution-content">
+                                        {{ solution.text }}
+                                    </div>
+                                    <div class="mt-2">
+                                        <span class="badge bg-primary">Votes: {{ solution.votes }}</span>
+                                    </div>
+                                </div>
+                                {% if user.is_authenticated and user != solution.user %}
+                                <form action="{% url 'vote_solution' solution.id %}" method="post" class="ms-3">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-sm btn-outline-primary">
+                                        Vote
+                                    </button>
+                                </form>
+                                {% endif %}
+                            </div>
+                            <hr class="my-3">
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-center py-4">No solutions have been submitted yet.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Solution Modal -->
+    <div class="modal fade" id="addSolutionModal" tabindex="-1" aria-labelledby="addSolutionModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addSolutionModalLabel">Add Solution</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form method="post" action="{% url 'problem_detail' problem.id %}">
+                    {% csrf_token %}
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="solution_text" class="form-label">Your Solution</label>
+                            <textarea class="form-control" id="solution_text" name="solution_text" rows="4" required></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Submit Solution</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .problem-details {
+        color: #666;
+    }
+    .problem-image {
+        max-height: 400px;
+        overflow: hidden;
+    }
+    .solution-item {
+        background: #f8f9fa;
+        padding: 1.5rem;
+        border-radius: 8px;
+    }
+    .solution-content {
+        margin-top: 1rem;
+        color: #333;
+    }
+</style>
+{% endblock %}
