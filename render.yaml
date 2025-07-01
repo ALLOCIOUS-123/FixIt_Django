@@ -1,0 +1,43 @@
+web:
+  service:
+    name: fixithub
+    type: web
+    env: python
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "gunicorn fixithub_django.wsgi:application"
+    envVars:
+      - key: DJANGO_SECRET
+        fromSecret: DJANGO_SECRET
+      - key: DEBUG
+        value: "False"
+      - key: ALLOWED_HOSTS
+        value: "*"
+      - key: DATABASE_URL
+        fromDatabase: fixithub-db
+      - key: EMAIL_HOST
+        value: "smtp.gmail.com"
+      - key: EMAIL_PORT
+        value: "587"
+      - key: EMAIL_USE_TLS
+        value: "True"
+      - key: EMAIL_HOST_USER
+        fromSecret: EMAIL_HOST_USER
+      - key: EMAIL_HOST_PASSWORD
+        fromSecret: EMAIL_HOST_PASSWORD
+      - key: SECURE_SSL_REDIRECT
+        value: "True"
+      - key: SECURE_HSTS_SECONDS
+        value: "31536000"
+      - key: SECURE_HSTS_INCLUDE_SUBDOMAINS
+        value: "True"
+      - key: SESSION_COOKIE_SECURE
+        value: "True"
+      - key: CSRF_COOKIE_SECURE
+        value: "True"
+    database:
+      name: fixithub-db
+      type: postgres
+      version: "15"
+    httpPort: 8000
+    plan: free
+    autoDeploy: true
